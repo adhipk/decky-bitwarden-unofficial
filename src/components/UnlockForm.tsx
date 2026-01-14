@@ -33,6 +33,13 @@ export function UnlockForm({ onUnlock, onLogout, isLoading, error, userEmail }: 
         </PanelSectionRow>
       )}
       
+      <PanelSectionRow>
+        <div style={{ opacity: 0.8, fontSize: "0.9em" }}>
+          You are already logged in on this device. Enter your master password
+          to unlock this session.
+        </div>
+      </PanelSectionRow>
+      
       {error && (
         <PanelSectionRow>
           <div style={{ color: "#ff6b6b", fontSize: "0.9em" }}>{error}</div>

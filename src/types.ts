@@ -25,6 +25,17 @@ export interface BackendResponse<T = unknown> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// CLI Debug Output
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface BwCommandOutput {
+  stdout?: string;
+  stderr?: string;
+  returncode?: number;
+  message?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Bitwarden Status
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -57,6 +68,18 @@ export interface VaultItem {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Two-factor Authentication (2FA)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const TWO_FACTOR_METHOD = {
+  AUTHENTICATOR: 0,
+  EMAIL: 1,
+  YUBIKEY: 3,
+} as const;
+
+export type TwoFactorMethod = (typeof TWO_FACTOR_METHOD)[keyof typeof TWO_FACTOR_METHOD];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Error Codes
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -66,6 +89,8 @@ export type ErrorCode =
   | "NOT_AUTHENTICATED"
   | "LOCKED"
   | "INVALID_CREDENTIALS"
+  | "TWO_FACTOR_REQUIRED"
+  | "INVALID_2FA_CODE"
   | "COMMAND_FAILED"
   | "CLIPBOARD_ERROR"
   | "UNKNOWN_ERROR";

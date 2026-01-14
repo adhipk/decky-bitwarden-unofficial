@@ -132,8 +132,13 @@ def run_bw(args: list[str], timeout: int = 30, env: dict | None = None) -> dict[
             run_env.update(env)
         
         # Run command
+        # Always add --nointeraction to prevent any interactive prompt hangs (Game Mode safe).
+        cmd_args = list(args)
+        if "--nointeraction" not in cmd_args:
+            cmd_args = ["--nointeraction"] + cmd_args
+
         result = subprocess.run(
-            [bw_path] + args,
+            [bw_path] + cmd_args,
             capture_output=True,
             text=True,
             timeout=timeout,

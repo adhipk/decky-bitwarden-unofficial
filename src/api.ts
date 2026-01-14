@@ -5,7 +5,7 @@
  */
 
 import { callable } from "@decky/api";
-import type { BackendResponse, StatusData, VaultItem } from "./types";
+import type { BackendResponse, StatusData, TwoFactorMethod, VaultItem } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Environment Checks
@@ -20,6 +20,10 @@ export const checkBitwarden = callable<[], BackendResponse<boolean>>("check_bitw
 
 export const getStatus = callable<[], BackendResponse<StatusData>>("status");
 export const login = callable<[email: string, password: string], BackendResponse<void>>("login");
+export const login2fa = callable<
+  [email: string, password: string, method: TwoFactorMethod, code: string],
+  BackendResponse<void>
+>("login_2fa");
 export const unlock = callable<[masterPassword: string], BackendResponse<string>>("unlock");
 export const lock = callable<[], BackendResponse<void>>("lock");
 export const logout = callable<[], BackendResponse<void>>("logout");

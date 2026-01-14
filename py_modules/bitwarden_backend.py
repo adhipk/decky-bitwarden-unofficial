@@ -61,7 +61,10 @@ class BitwardenCLI:
 
     def status(self) -> dict[str, Any]:
         """Get current Bitwarden CLI status (unauthenticated/locked/unlocked)."""
-        result = run_bw(["status", "--raw"], timeout=self.TIMEOUT)
+        # Important: `bw status` reports "unlocked" only when an active session key is available
+        # (e.g. via BW_SESSION env or --session). If we have a session key, include it so the UI
+        # doesn't incorrectly show "locked" after a successful unlock.
+        result = run_bw(["status", "--raw"], timeout=self.TIMEOUT, env=self._get_session_env())
         
         if not result["ok"]:
             if result["error"] == "BW_BINARY_MISSING":
@@ -74,15 +77,27 @@ class BitwardenCLI:
         except json.JSONDecodeError:
             return self._make_response(False, error="COMMAND_FAILED", data=result["data"])
 
-    def login(self, email: str, password: str) -> dict[str, Any]:
-        """Login to Bitwarden with email and password."""
-        result = run_bw(
-            ["login", email, "--passwordenv", "BW_PASSWORD", "--raw"],
-            timeout=self.TIMEOUT,
-            env={"BW_PASSWORD": password}
-        )
+    def login(self, email: str, password: str, method: int | None = None, code: str | None = None) -> dict[str, Any]:
+        """
+        Login to Bitwarden with email/password.
+        If 2FA is enabled and the CLI requires a provider, it will return TWO_FACTOR_REQUIRED.
+        If method+code are provided, we pass them to the CLI non-interactively.
+        """
+        args: list[str] = ["login", email, "--passwordenv", "BW_PASSWORD", "--raw"]
+        if method is not None and code is not None:
+            args += ["--method", str(method), "--code", code]
+
+        result = run_bw(args, timeout=self.TIMEOUT, env={"BW_PASSWORD": password})
         
         if result["ok"]:
+            # Newer CLI behavior: `bw login --raw` may return a session key directly.
+            # If present, store it so subsequent commands can run without requiring a separate unlock call.
+            stdout = (result.get("data") or {}).get("stdout", "")
+            session_key = stdout.strip() if isinstance(stdout, str) else ""
+            if session_key and not session_key.startswith("{") and not session_key.startswith("["):
+                self._session_key = session_key
+                return self._make_response(True, data={"logged_in": True, "session_key": session_key})
+
             return self._make_response(True, data={"logged_in": True})
         
         # Check for specific errors
@@ -90,14 +105,35 @@ class BitwardenCLI:
         stdout = result["data"].get("stdout", "").lower()
         combined = stderr + stdout
         
+        # Wrong email/password (Bitwarden CLI common message)
+        if "invalid master password" in combined:
+            return self._make_response(False, error="INVALID_CREDENTIALS")
         if "invalid" in combined or "incorrect" in combined:
             return self._make_response(False, error="INVALID_CREDENTIALS")
+        if "no provider selected" in combined:
+            return self._make_response(
+                False,
+                error="TWO_FACTOR_REQUIRED",
+                data={
+                    "providers": [
+                        {"method": 0, "label": "Authenticator"},
+                        {"method": 1, "label": "Email"},
+                        {"method": 3, "label": "YubiKey"},
+                    ]
+                },
+            )
+        if "two-step login code is invalid" in combined or "invalid two-step login code" in combined:
+            return self._make_response(False, error="INVALID_2FA_CODE")
         if "already logged in" in combined:
             return self._make_response(True, data={"logged_in": True, "already": True})
         if result["error"] == "BW_BINARY_MISSING":
             return self._make_response(False, error="BW_BINARY_MISSING", data=result["data"])
         
         return self._make_response(False, error="COMMAND_FAILED", data=result["data"])
+
+    def login_2fa(self, email: str, password: str, method: int, code: str) -> dict[str, Any]:
+        """Login with email/password + 2FA provider and code."""
+        return self.login(email=email, password=password, method=method, code=code)
 
     def unlock(self, master_password: str) -> dict[str, Any]:
         """Unlock the vault with master password."""

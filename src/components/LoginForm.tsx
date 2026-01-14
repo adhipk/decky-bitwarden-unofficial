@@ -16,7 +16,6 @@ export function LoginForm({ onLogin, isLoading, error }: LoginFormProps) {
   const [password, setPassword] = useState("");
 
   const handleSubmit = async () => {
-    // TODO: Implement login submission
     await onLogin(email, password);
   };
 
@@ -27,6 +26,17 @@ export function LoginForm({ onLogin, isLoading, error }: LoginFormProps) {
           <div style={{ color: "#ff6b6b" }}>{error}</div>
         </PanelSectionRow>
       )}
+      <PanelSectionRow>
+        <div
+          style={{
+            fontSize: "0.9em",
+            opacity: 0.8,
+          }}
+        >
+          This is a one-time login for this device. After this, you&apos;ll only
+          need your master password to unlock.
+        </div>
+      </PanelSectionRow>
       <PanelSectionRow>
         <TextField
           label="Email"

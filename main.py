@@ -112,13 +112,23 @@ class Plugin:
         return result
 
     async def login(self, email: str, password: str) -> dict:
-        """Login to Bitwarden."""
+        """Login to Bitwarden with email/password."""
         log_info(f"Login attempt for: {email}")
         result = self._bw.login(email, password)
         if result["ok"]:
             log_info("Login: OK")
         else:
             log_error(f"Login failed: {result['error']}")
+        return result
+
+    async def login_2fa(self, email: str, password: str, method: int, code: str) -> dict:
+        """Login to Bitwarden with email/password + 2FA provider and code."""
+        log_info(f"Login 2FA attempt for: {email} (method={method})")
+        result = self._bw.login_2fa(email, password, method, code)
+        if result["ok"]:
+            log_info("Login 2FA: OK")
+        else:
+            log_error(f"Login 2FA failed: {result['error']}")
         return result
 
     async def unlock(self, master_password: str) -> dict:
