@@ -21,6 +21,7 @@ export const checkBitwarden = callable<[], BackendResponse<boolean>>("check_bitw
 export const getStatus = callable<[], BackendResponse<StatusData>>("status");
 export const login = callable<[email: string, password: string], BackendResponse<void>>("login");
 export const unlock = callable<[masterPassword: string], BackendResponse<string>>("unlock");
+export const lock = callable<[], BackendResponse<void>>("lock");
 export const logout = callable<[], BackendResponse<void>>("logout");
 
 // ─────────────────────────────────────────────────────────────────────────────
