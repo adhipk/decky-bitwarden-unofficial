@@ -1,0 +1,7 @@
+# Python dependencies for Bitwarden Decky Plugin
+# Note: Most dependencies are optional fallbacks
+
+# Clipboard fallback (optional)
+# Only used if wl-copy and xclip are unavailable
+# The plugin will work without this on Steam Deck
+pyperclip>=1.8.0

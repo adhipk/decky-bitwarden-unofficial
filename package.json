@@ -4,8 +4,9 @@
   "description": "Unofficial Bitwarden plugin for Decky Loader - Access your vault from Steam Deck Game Mode",
   "type": "module",
   "scripts": {
-    "build": "rollup -c",
-    "watch": "rollup -c -w",
+    "fetch-bw": "scripts/fetch_bw.sh",
+    "build": "scripts/fetch_bw.sh && rollup -c",
+    "watch": "scripts/fetch_bw.sh && rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

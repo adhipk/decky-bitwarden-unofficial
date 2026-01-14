@@ -30,7 +30,7 @@ export const logout = callable<[], BackendResponse<void>>("logout");
 
 export const listItems = callable<[], BackendResponse<VaultItem[]>>("list_items");
 export const getItem = callable<[itemId: string], BackendResponse<VaultItem>>("get_item");
-export const getTotp = callable<[itemId: string], BackendResponse<string>>("get_totp");
+export const getTotp = callable<[itemId: string], BackendResponse<{ totp: string }>>("get_totp");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Clipboard
