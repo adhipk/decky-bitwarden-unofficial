@@ -73,6 +73,10 @@ class Plugin:
         """Logout from Bitwarden."""
         return self._bw.logout()
 
+    async def lock(self) -> dict:
+        """Lock the Bitwarden vault."""
+        return self._bw.lock()
+
     # ─────────────────────────────────────────────────────────────────────────
     # Vault Operations (exposed to frontend)
     # ─────────────────────────────────────────────────────────────────────────
