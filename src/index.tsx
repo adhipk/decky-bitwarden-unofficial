@@ -1,115 +1,226 @@
+/**
+ * Bitwarden Decky Plugin - Frontend Entry Point
+ * 
+ * State machine UI for Bitwarden vault access.
+ */
+
+import { useState, useEffect } from "react";
+import { staticClasses } from "@decky/ui";
+import { definePlugin, toaster } from "@decky/api";
+import { FaKey } from "react-icons/fa";
+
+import type { AppState, VaultItem } from "./types";
 import {
-  ButtonItem,
-  PanelSection,
-  PanelSectionRow,
-  Navigation,
-  staticClasses
-} from "@decky/ui";
-import {
-  addEventListener,
-  removeEventListener,
-  callable,
-  definePlugin,
-  toaster,
-  // routerHook
-} from "@decky/api"
-import { useState } from "react";
-import { FaShip } from "react-icons/fa";
+  Loading,
+  FlatpakMissing,
+  BitwardenMissing,
+  LoginForm,
+  UnlockForm,
+  VaultList,
+  ItemDetail,
+} from "./components";
+import * as api from "./api";
 
-// import logo from "../assets/logo.png";
-
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
-
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Content Component
+// ─────────────────────────────────────────────────────────────────────────────
 
 function Content() {
-  const [result, setResult] = useState<number | undefined>();
+  const [appState, setAppState] = useState<AppState>("LOADING");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | undefined>();
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<VaultItem | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
 
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
+  // ───────────────────────────────────────────────────────────────────────────
+  // Initialization
+  // ───────────────────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    initializePlugin();
+  }, []);
+
+  const initializePlugin = async () => {
+    // TODO: Implement initialization flow
+    // 1. Check flatpak
+    // 2. Check bitwarden
+    // 3. Get status
+    setAppState("LOADING");
   };
 
-  return (
-    <PanelSection title="Panel Section">
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={onClick}
-        >
-          {result ?? "Add two numbers via Python"}
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
-        >
-          {"Start Python timer"}
-        </ButtonItem>
-      </PanelSectionRow>
+  // ───────────────────────────────────────────────────────────────────────────
+  // Authentication Handlers
+  // ───────────────────────────────────────────────────────────────────────────
 
-      {/* <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow> */}
+  const handleLogin = async (email: string, password: string) => {
+    // TODO: Implement login
+    setIsLoading(true);
+    setError(null);
+    try {
+      // await api.login(email, password);
+    } catch (err) {
+      setError("Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      {/*<PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>*/}
-    </PanelSection>
-  );
-};
+  const handleUnlock = async (masterPassword: string) => {
+    // TODO: Implement unlock
+    setIsLoading(true);
+    setError(null);
+    try {
+      // await api.unlock(masterPassword);
+    } catch (err) {
+      setError("Unlock failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    // TODO: Implement logout
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Vault Handlers
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const handleItemSelect = (item: VaultItem) => {
+    setSelectedItem(item);
+  };
+
+  const handleBack = () => {
+    setSelectedItem(null);
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Clipboard Handlers
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const handleCopyUsername = async () => {
+    if (!selectedItem?.login?.username) return;
+    // TODO: Implement copy
+    setIsCopying(true);
+    try {
+      // await api.copyToClipboard(selectedItem.login.username);
+      toaster.toast({ title: "Copied", body: "Username copied to clipboard" });
+    } catch {
+      toaster.toast({ title: "Error", body: "Failed to copy" });
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    if (!selectedItem?.login?.password) return;
+    // TODO: Implement copy
+    setIsCopying(true);
+    try {
+      // await api.copyToClipboard(selectedItem.login.password);
+      toaster.toast({ title: "Copied", body: "Password copied to clipboard" });
+    } catch {
+      toaster.toast({ title: "Error", body: "Failed to copy" });
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  const handleCopyTotp = async () => {
+    if (!selectedItem) return;
+    // TODO: Implement TOTP copy
+    setIsCopying(true);
+    try {
+      // const result = await api.getTotp(selectedItem.id);
+      toaster.toast({ title: "Copied", body: "TOTP copied to clipboard" });
+    } catch {
+      toaster.toast({ title: "Error", body: "Failed to copy TOTP" });
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Render State Machine
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // Item detail view (sub-state of UNLOCKED)
+  if (selectedItem) {
+    return (
+      <ItemDetail
+        item={selectedItem}
+        onCopyUsername={handleCopyUsername}
+        onCopyPassword={handleCopyPassword}
+        onCopyTotp={handleCopyTotp}
+        onBack={handleBack}
+        isCopying={isCopying}
+      />
+    );
+  }
+
+  // Main state machine
+  switch (appState) {
+    case "LOADING":
+      return <Loading />;
+
+    case "FLATPAK_MISSING":
+      return <FlatpakMissing />;
+
+    case "BITWARDEN_MISSING":
+      return <BitwardenMissing />;
+
+    case "UNAUTHENTICATED":
+      return (
+        <LoginForm
+          onLogin={handleLogin}
+          isLoading={isLoading}
+          error={error}
+        />
+      );
+
+    case "LOCKED":
+      return (
+        <UnlockForm
+          onUnlock={handleUnlock}
+          isLoading={isLoading}
+          error={error}
+          userEmail={userEmail}
+        />
+      );
+
+    case "UNLOCKED":
+      return (
+        <VaultList
+          items={vaultItems}
+          onItemSelect={handleItemSelect}
+          onLogout={handleLogout}
+          isLoading={isLoading}
+        />
+      );
+
+    default:
+      return <Loading />;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plugin Definition
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
-
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
-
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
+  console.log("Bitwarden plugin initializing");
 
   return {
-    // The name shown in various decky menus
-    name: "Test Plugin",
-    // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
-    // The content of your plugin's menu
+    name: "Bitwarden",
+    titleView: (
+      <div className={staticClasses.Title}>Bitwarden</div>
+    ),
     content: <Content />,
-    // The icon displayed in the plugin list
-    icon: <FaShip />,
-    // The function triggered when your plugin unloads
+    icon: <FaKey />,
     onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
+      console.log("Bitwarden plugin unloading");
     },
   };
 });

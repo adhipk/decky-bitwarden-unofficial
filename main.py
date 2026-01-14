@@ -1,57 +1,98 @@
-import os
+"""
+Bitwarden Decky Plugin - Backend Entry Point
 
-# The decky plugin module is located at decky-loader/plugin
-# For easy intellisense checkout the decky-loader code repo
-# and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
-import decky
+Exposes Bitwarden CLI operations to the frontend via Decky RPC.
+"""
+
 import asyncio
+import decky
+
+# Import the Bitwarden CLI wrapper
+from py_modules.bitwarden_backend import BitwardenCLI
+
 
 class Plugin:
-    # A normal method. It can be called from the TypeScript side using @decky/api.
-    async def add(self, left: int, right: int) -> int:
-        return left + right
+    """
+    Decky plugin class exposing Bitwarden operations.
+    All public async methods are callable from the frontend.
+    """
 
-    async def long_running(self):
-        await asyncio.sleep(15)
-        # Passing through a bunch of random data, just as an example
-        await decky.emit("timer_event", "Hello from the backend!", True, 2)
+    def __init__(self):
+        self._bw: BitwardenCLI | None = None
 
-    # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
+    # ─────────────────────────────────────────────────────────────────────────
+    # Lifecycle Methods
+    # ─────────────────────────────────────────────────────────────────────────
+
     async def _main(self):
-        self.loop = asyncio.get_event_loop()
-        decky.logger.info("Hello World!")
+        """Called on plugin load."""
+        self._bw = BitwardenCLI()
+        decky.logger.info("Bitwarden plugin loaded")
 
-    # Function called first during the unload process, utilize this to handle your plugin being stopped, but not
-    # completely removed
     async def _unload(self):
-        decky.logger.info("Goodnight World!")
-        pass
+        """Called when plugin is stopped (but not removed)."""
+        decky.logger.info("Bitwarden plugin unloading")
 
-    # Function called after `_unload` during uninstall, utilize this to clean up processes and other remnants of your
-    # plugin that may remain on the system
     async def _uninstall(self):
-        decky.logger.info("Goodbye World!")
-        pass
+        """Called when plugin is uninstalled."""
+        decky.logger.info("Bitwarden plugin uninstalled")
 
-    async def start_timer(self):
-        self.loop.create_task(self.long_running())
-
-    # Migrations that should be performed before entering `_main()`.
     async def _migration(self):
-        decky.logger.info("Migrating")
-        # Here's a migration example for logs:
-        # - `~/.config/decky-template/template.log` will be migrated to `decky.decky_LOG_DIR/template.log`
-        decky.migrate_logs(os.path.join(decky.DECKY_USER_HOME,
-                                               ".config", "decky-template", "template.log"))
-        # Here's a migration example for settings:
-        # - `~/homebrew/settings/template.json` is migrated to `decky.decky_SETTINGS_DIR/template.json`
-        # - `~/.config/decky-template/` all files and directories under this root are migrated to `decky.decky_SETTINGS_DIR/`
-        decky.migrate_settings(
-            os.path.join(decky.DECKY_HOME, "settings", "template.json"),
-            os.path.join(decky.DECKY_USER_HOME, ".config", "decky-template"))
-        # Here's a migration example for runtime data:
-        # - `~/homebrew/template/` all files and directories under this root are migrated to `decky.decky_RUNTIME_DIR/`
-        # - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky.decky_RUNTIME_DIR/`
-        decky.migrate_runtime(
-            os.path.join(decky.DECKY_HOME, "template"),
-            os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-template"))
+        """Called before _main() for data migration."""
+        decky.logger.info("Bitwarden plugin migration check")
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Environment Checks (exposed to frontend)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def check_flatpak(self) -> dict:
+        """Check if flatpak is available."""
+        return self._bw.check_flatpak()
+
+    async def check_bitwarden(self) -> dict:
+        """Check if Bitwarden Flatpak is installed."""
+        return self._bw.check_bitwarden()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Authentication (exposed to frontend)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def status(self) -> dict:
+        """Get Bitwarden authentication status."""
+        return self._bw.status()
+
+    async def login(self, email: str, password: str) -> dict:
+        """Login to Bitwarden."""
+        return self._bw.login(email, password)
+
+    async def unlock(self, master_password: str) -> dict:
+        """Unlock the Bitwarden vault."""
+        return self._bw.unlock(master_password)
+
+    async def logout(self) -> dict:
+        """Logout from Bitwarden."""
+        return self._bw.logout()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Vault Operations (exposed to frontend)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def list_items(self) -> dict:
+        """List all vault items."""
+        return self._bw.list_items()
+
+    async def get_item(self, item_id: str) -> dict:
+        """Get a specific vault item."""
+        return self._bw.get_item(item_id)
+
+    async def get_totp(self, item_id: str) -> dict:
+        """Get TOTP code for an item."""
+        return self._bw.get_totp(item_id)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Clipboard (exposed to frontend)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def copy_to_clipboard(self, text: str) -> dict:
+        """Copy text to clipboard."""
+        return self._bw.copy_to_clipboard(text)
